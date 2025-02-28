@@ -10,10 +10,6 @@ type ChordChange = {
 };
 
 type ChordPair = string;
-type ChordData = {
-  dates: string[];
-  counts: number[];
-};
 
 type Props = {
   history: ChordChange[];
