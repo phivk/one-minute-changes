@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
+import useD3ScatterPlot from "../hooks/useD3ScatterPlot";
 
 type ChordChange = {
   id: string;
@@ -16,6 +17,9 @@ type Props = {
 };
 
 const ProgressChart: React.FC<Props> = ({ history }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+
   // Get all unique chord pairs
   const chordPairs = useMemo(() => {
     const pairs = new Set<ChordPair>();
@@ -29,43 +33,60 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
     chordPairs[0] || ""
   );
 
-  // Process data for the selected chord pair
+  // Process data for D3
   const chartData = useMemo(() => {
-    if (!selectedPair) return { dates: [], counts: [] };
+    if (!selectedPair) return [];
 
     const [fromChord, toChord] = selectedPair.split("-");
 
-    const filteredEntries = history
+    return history
       .filter(
         (entry) => entry.fromChord === fromChord && entry.toChord === toChord
       )
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    return {
-      dates: filteredEntries.map((entry) =>
-        new Date(entry.date).toLocaleDateString()
-      ),
-      counts: filteredEntries.map((entry) => entry.count),
-    };
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .map((entry) => ({
+        date: new Date(entry.date).toLocaleDateString(),
+        value: entry.count,
+      }));
   }, [history, selectedPair]);
+
+  // Update dimensions on mount and window resize
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.offsetWidth,
+          height: 250,
+        });
+      }
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    return () => window.removeEventListener("resize", updateDimensions);
+  }, []);
+
+  const svgRef = useD3ScatterPlot(
+    chartData,
+    dimensions.width,
+    dimensions.height
+  );
 
   // Calculate statistics
   const stats = useMemo(() => {
-    if (chartData.counts.length === 0)
-      return { max: 0, avg: 0, trend: "neutral" };
+    if (chartData.length === 0) return { max: 0, avg: 0, trend: "neutral" };
 
-    const max = Math.max(...chartData.counts);
+    const max = Math.max(...chartData.map((d) => d.value));
     const avg = Math.round(
-      chartData.counts.reduce((sum, count) => sum + count, 0) /
-        chartData.counts.length
+      chartData.reduce((sum, d) => sum + d.value, 0) / chartData.length
     );
 
     // Calculate trend based on last 5 entries
     let trend: "up" | "down" | "neutral" = "neutral";
-    if (chartData.counts.length >= 3) {
-      const recent = chartData.counts.slice(-3);
-      const firstAvg = recent[0];
-      const lastAvg = recent[recent.length - 1];
+    if (chartData.length >= 3) {
+      const recent = chartData.slice(-3);
+      const firstAvg = recent[0].value;
+      const lastAvg = recent[recent.length - 1].value;
 
       if (lastAvg > firstAvg) trend = "up";
       else if (lastAvg < firstAvg) trend = "down";
@@ -73,9 +94,6 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
 
     return { max, avg, trend };
   }, [chartData]);
-
-  // Find the max value for scaling the chart
-  const maxValue = Math.max(...chartData.counts, 1) * 1.1;
 
   return (
     <div className="max-w-2xl mx-auto bg-white/10 backdrop-blur-sm p-6 rounded-lg shadow-lg">
@@ -108,7 +126,7 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
             </select>
           </div>
 
-          {chartData.counts.length > 0 ? (
+          {chartData.length > 0 ? (
             <>
               <div className="grid grid-cols-3 gap-4 mb-6">
                 <div className="bg-indigo-800/50 p-4 rounded-lg">
@@ -144,56 +162,14 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-6" ref={containerRef}>
                 <h3 className="text-lg font-semibold mb-4">Progress Chart</h3>
-                <div className="h-64 relative">
-                  {/* Y-axis labels */}
-                  <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-400">
-                    <span>{Math.round(maxValue)}</span>
-                    <span>{Math.round(maxValue * 0.75)}</span>
-                    <span>{Math.round(maxValue * 0.5)}</span>
-                    <span>{Math.round(maxValue * 0.25)}</span>
-                    <span>0</span>
-                  </div>
-
-                  {/* Chart grid */}
-                  <div className="absolute left-10 right-0 top-0 bottom-0 border-l border-b border-indigo-700/50">
-                    {[0.25, 0.5, 0.75].map((pos) => (
-                      <div
-                        key={pos}
-                        className="absolute left-0 right-0 border-t border-indigo-700/30"
-                        style={{ top: `${pos * 100}%` }}
-                      />
-                    ))}
-
-                    {/* Bars */}
-                    <div className="absolute left-0 right-0 top-0 bottom-0 flex items-end">
-                      {chartData.counts.map((count, index) => {
-                        const height = (count / maxValue) * 100;
-                        const barWidth =
-                          100 / Math.max(chartData.counts.length * 2, 1);
-
-                        return (
-                          <div
-                            key={index}
-                            className="flex flex-col items-center mx-1"
-                            style={{ width: `${barWidth}%` }}
-                          >
-                            <div
-                              className="w-full bg-gradient-to-t from-indigo-600 to-blue-400 rounded-t"
-                              style={{ height: `${height}%` }}
-                            />
-                            {chartData.counts.length <= 10 && (
-                              <div className="text-xs mt-1 text-gray-300 transform -rotate-45 origin-top-left">
-                                {chartData.dates[index]}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
+                <svg
+                  ref={svgRef}
+                  width={dimensions.width}
+                  height={dimensions.height}
+                  className="w-full overflow-visible"
+                />
               </div>
 
               <div className="mt-8">
@@ -207,14 +183,14 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {chartData.counts.map((count, index) => (
+                      {chartData.map((d, index) => (
                         <tr
                           key={index}
                           className="border-b border-indigo-900/20 last:border-0"
                         >
-                          <td className="p-1">{chartData.dates[index]}</td>
+                          <td className="p-1">{d.date}</td>
                           <td className="p-1 text-right font-medium">
-                            {count}
+                            {d.value}
                           </td>
                         </tr>
                       ))}
