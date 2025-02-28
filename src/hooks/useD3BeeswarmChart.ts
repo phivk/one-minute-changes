@@ -6,7 +6,15 @@ type DataPoint = {
   value: number;
 };
 
-const useD3ScatterPlot = (
+interface SimNode extends d3.SimulationNodeDatum {
+  x: number;
+  y: number;
+  data: DataPoint;
+  originalX: number;
+  originalY: number;
+}
+
+const useD3BeeswarmChart = (
   data: DataPoint[],
   width: number,
   height: number,
@@ -35,43 +43,36 @@ const useD3ScatterPlot = (
       .domain([0, d3.max(data, (d) => d.value) || 0])
       .nice();
 
-    // Add crosses
-    const crossSize = 6; // size of the cross in pixels
+    // Create nodes for the simulation
+    const nodes: SimNode[] = data.map((d) => ({
+      data: d,
+      x: x(d.date)! + x.bandwidth() / 2,
+      y: y(d.value),
+      originalX: x(d.date)! + x.bandwidth() / 2,
+      originalY: y(d.value),
+    }));
 
-    // Create group for each data point
-    const points = svg
-      .selectAll("g.point")
-      .data(data)
-      .join("g")
-      .attr("class", "point")
-      .attr(
-        "transform",
-        (d) => `translate(${x(d.date)! + x.bandwidth() / 2}, ${y(d.value)})`
-      );
+    // Create force simulation
+    const simulation = d3
+      .forceSimulation<SimNode>(nodes)
+      .force("x", d3.forceX<SimNode>((d) => d.originalX).strength(0.2))
+      .force("y", d3.forceY<SimNode>((d) => d.originalY).strength(0.2))
+      .force("collide", d3.forceCollide(6).strength(0.8))
+      .stop();
 
-    // Add the crosses (using two lines for each point)
-    points.each(function () {
-      const point = d3.select(this);
-      // Diagonal line from top-left to bottom-right
-      point
-        .append("line")
-        .attr("x1", -crossSize)
-        .attr("y1", -crossSize)
-        .attr("x2", crossSize)
-        .attr("y2", crossSize)
-        .attr("stroke", "#60a5fa")
-        .attr("stroke-width", 2);
+    // Run the simulation
+    for (let i = 0; i < 120; ++i) simulation.tick();
 
-      // Diagonal line from top-right to bottom-left
-      point
-        .append("line")
-        .attr("x1", crossSize)
-        .attr("y1", -crossSize)
-        .attr("x2", -crossSize)
-        .attr("y2", crossSize)
-        .attr("stroke", "#60a5fa")
-        .attr("stroke-width", 2);
-    });
+    // Add circles using simulated positions
+    svg
+      .selectAll("circle")
+      .data(nodes)
+      .join("circle")
+      .attr("cx", (d) => d.x)
+      .attr("cy", (d) => d.y)
+      .attr("r", 6)
+      .attr("fill", "#60a5fa")
+      .attr("opacity", 0.6);
 
     // Add axes
     const xAxis = d3
@@ -109,4 +110,4 @@ const useD3ScatterPlot = (
   return svgRef;
 };
 
-export default useD3ScatterPlot;
+export default useD3BeeswarmChart;

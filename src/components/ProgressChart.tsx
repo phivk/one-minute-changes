@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef, useEffect } from "react";
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
-import useD3ScatterPlot from "../hooks/useD3ScatterPlot";
+import useD3BeeswarmChart from "../hooks/useD3BeeswarmChart";
 
 type ChordChange = {
   id: string;
@@ -66,7 +66,7 @@ const ProgressChart: React.FC<Props> = ({ history }) => {
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  const svgRef = useD3ScatterPlot(
+  const svgRef = useD3BeeswarmChart(
     chartData,
     dimensions.width,
     dimensions.height
