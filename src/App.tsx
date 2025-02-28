@@ -1,7 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { History, Timer, PlusCircle, MinusCircle, Play, Square, Save, Music, BarChart2 } from 'lucide-react';
-import ChordChangeHistory from './components/ChordChangeHistory';
-import ProgressChart from './components/ProgressChart';
+import React, { useState, useEffect } from "react";
+import {
+  History,
+  Timer,
+  PlusCircle,
+  MinusCircle,
+  Play,
+  Square,
+  Save,
+  Music,
+  BarChart2,
+} from "lucide-react";
+import ChordChangeHistory from "./components/ChordChangeHistory";
+import ProgressChart from "./components/ProgressChart";
 
 // Define types
 type ChordChange = {
@@ -16,31 +26,33 @@ function App() {
   // State for timer
   const [timeLeft, setTimeLeft] = useState<number>(60);
   const [isActive, setIsActive] = useState<boolean>(false);
-  
+
   // State for chord changes
   const [count, setCount] = useState<number>(0);
   const [inputValue, setInputValue] = useState<string>("0");
-  const [fromChord, setFromChord] = useState<string>('A');
-  const [toChord, setToChord] = useState<string>('D');
-  
+  const [fromChord, setFromChord] = useState<string>("A");
+  const [toChord, setToChord] = useState<string>("D");
+
   // State for history
   const [history, setHistory] = useState<ChordChange[]>(() => {
-    const savedHistory = localStorage.getItem('chordChangeHistory');
+    const savedHistory = localStorage.getItem("chordChangeHistory");
     return savedHistory ? JSON.parse(savedHistory) : [];
   });
-  
+
   // State for view
-  const [activeView, setActiveView] = useState<'practice' | 'history' | 'stats'>('practice');
+  const [activeView, setActiveView] = useState<
+    "practice" | "history" | "stats"
+  >("practice");
 
   // Save history to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('chordChangeHistory', JSON.stringify(history));
+    localStorage.setItem("chordChangeHistory", JSON.stringify(history));
   }, [history]);
 
   // Timer effect
   useEffect(() => {
     let interval: number | undefined;
-    
+
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
         setTimeLeft((prevTime) => prevTime - 1);
@@ -48,10 +60,12 @@ function App() {
     } else if (timeLeft === 0) {
       setIsActive(false);
       // Play sound when timer ends
-      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      const audio = new Audio(
+        "https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"
+      );
       audio.play();
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -78,7 +92,7 @@ function App() {
     setCount(newCount);
     setInputValue(newCount.toString());
   };
-  
+
   const decrementCount = () => {
     if (count > 0) {
       const newCount = count - 1;
@@ -86,13 +100,13 @@ function App() {
       setInputValue(newCount.toString());
     }
   };
-  
+
   // Handle direct count input
   const handleCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setInputValue(value);
-    
-    if (value === '') {
+
+    if (value === "") {
       setCount(0);
     } else {
       const numValue = parseInt(value);
@@ -110,16 +124,16 @@ function App() {
         date: new Date().toISOString(),
         fromChord,
         toChord,
-        count
+        count,
       };
-      
-      setHistory(prev => [newEntry, ...prev]);
+
+      setHistory((prev) => [newEntry, ...prev]);
       resetTimer();
     }
   };
 
   // Common chord options
-  const chordOptions = ['A', 'Am', 'C', 'D', 'Dm', 'E', 'Em', 'F', 'G'];
+  const chordOptions = ["A", "Am", "C", "D", "Dm", "E", "Em", "F", "G"];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-900 to-indigo-900 text-white">
@@ -128,66 +142,77 @@ function App() {
           <Music className="h-6 w-6" /> One Minute Changes
         </h1>
       </header>
-      
+
       <nav className="flex justify-around p-2 bg-black/20">
-        <button 
-          onClick={() => setActiveView('practice')}
-          className={`px-4 py-2 rounded-md flex items-center gap-1 ${activeView === 'practice' ? 'bg-indigo-700' : 'hover:bg-indigo-800'}`}
+        <button
+          onClick={() => setActiveView("practice")}
+          className={`px-4 py-2 rounded-md flex items-center gap-1 ${
+            activeView === "practice" ? "bg-indigo-700" : "hover:bg-indigo-800"
+          }`}
         >
           <Timer className="h-4 w-4" /> Practice
         </button>
-        <button 
-          onClick={() => setActiveView('history')}
-          className={`px-4 py-2 rounded-md flex items-center gap-1 ${activeView === 'history' ? 'bg-indigo-700' : 'hover:bg-indigo-800'}`}
+        <button
+          onClick={() => setActiveView("history")}
+          className={`px-4 py-2 rounded-md flex items-center gap-1 ${
+            activeView === "history" ? "bg-indigo-700" : "hover:bg-indigo-800"
+          }`}
         >
           <History className="h-4 w-4" /> History
         </button>
-        <button 
-          onClick={() => setActiveView('stats')}
-          className={`px-4 py-2 rounded-md flex items-center gap-1 ${activeView === 'stats' ? 'bg-indigo-700' : 'hover:bg-indigo-800'}`}
+        <button
+          onClick={() => setActiveView("stats")}
+          className={`px-4 py-2 rounded-md flex items-center gap-1 ${
+            activeView === "stats" ? "bg-indigo-700" : "hover:bg-indigo-800"
+          }`}
         >
           <BarChart2 className="h-4 w-4" /> Stats
         </button>
       </nav>
-      
+
       <main className="container mx-auto p-4">
-        {activeView === 'practice' && (
+        {activeView === "practice" && (
           <div className="max-w-md mx-auto bg-white/10 backdrop-blur-sm p-6 rounded-lg shadow-lg">
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
                 <div className="w-1/2 pr-2">
                   <label className="block text-sm mb-1">From Chord</label>
-                  <select 
+                  <select
                     value={fromChord}
                     onChange={(e) => setFromChord(e.target.value)}
                     className="w-full p-2 rounded bg-indigo-800 text-white"
                   >
-                    {chordOptions.map(chord => (
-                      <option key={chord} value={chord}>{chord}</option>
+                    {chordOptions.map((chord) => (
+                      <option key={chord} value={chord}>
+                        {chord}
+                      </option>
                     ))}
                   </select>
                 </div>
                 <div className="w-1/2 pl-2">
                   <label className="block text-sm mb-1">To Chord</label>
-                  <select 
+                  <select
                     value={toChord}
                     onChange={(e) => setToChord(e.target.value)}
                     className="w-full p-2 rounded bg-indigo-800 text-white"
                   >
-                    {chordOptions.map(chord => (
-                      <option key={chord} value={chord}>{chord}</option>
+                    {chordOptions.map((chord) => (
+                      <option key={chord} value={chord}>
+                        {chord}
+                      </option>
                     ))}
                   </select>
                 </div>
               </div>
-              
+
               <div className="text-center mb-4">
                 <div className="text-6xl font-bold mb-2">
-                  {String(Math.floor(timeLeft / 60)).padStart(2, '0')}:{String(timeLeft % 60).padStart(2, '0')}
+                  {String(Math.floor(timeLeft / 60)).padStart(2, "0")}:
+                  {String(timeLeft % 60).padStart(2, "0")}
                 </div>
                 <div className="flex justify-center gap-4">
                   {!isActive ? (
-                    <button 
+                    <button
                       onClick={startTimer}
                       disabled={isActive}
                       className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full flex items-center gap-1"
@@ -195,7 +220,7 @@ function App() {
                       <Play className="h-5 w-5" /> Start
                     </button>
                   ) : (
-                    <button 
+                    <button
                       onClick={resetTimer}
                       className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full flex items-center gap-1"
                     >
@@ -204,17 +229,17 @@ function App() {
                   )}
                 </div>
               </div>
-              
+
               <div className="text-center mb-6">
                 <p className="text-sm mb-2">Chord Changes</p>
                 <div className="flex items-center justify-center gap-4">
-                  <button 
+                  <button
                     onClick={decrementCount}
                     className="bg-indigo-700 hover:bg-indigo-800 p-2 rounded-full"
                   >
                     <MinusCircle className="h-6 w-6" />
                   </button>
-                  
+
                   {/* Direct input field for count with hidden controls */}
                   <div className="relative w-20">
                     <input
@@ -222,6 +247,12 @@ function App() {
                       inputMode="numeric"
                       value={inputValue}
                       onChange={handleCountChange}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.currentTarget.blur();
+                          saveSession();
+                        }
+                      }}
                       onFocus={(e) => {
                         if (e.target.value === "0") {
                           setInputValue("");
@@ -236,8 +267,8 @@ function App() {
                       aria-label="Number of chord changes"
                     />
                   </div>
-                  
-                  <button 
+
+                  <button
                     onClick={incrementCount}
                     className="bg-indigo-700 hover:bg-indigo-800 p-2 rounded-full"
                   >
@@ -245,16 +276,20 @@ function App() {
                   </button>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={saveSession}
                 disabled={count === 0}
-                className={`w-full py-3 rounded-md flex items-center justify-center gap-2 ${count === 0 ? 'bg-gray-600' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                className={`w-full py-3 rounded-md flex items-center justify-center gap-2 ${
+                  count === 0
+                    ? "bg-gray-600"
+                    : "bg-indigo-600 hover:bg-indigo-700"
+                }`}
               >
                 <Save className="h-5 w-5" /> Save Progress
               </button>
             </div>
-            
+
             {history.length > 0 && (
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-2">Recent Progress</h3>
@@ -263,7 +298,9 @@ function App() {
                     <div key={entry.id} className="mb-2 last:mb-0">
                       <div className="flex justify-between items-center">
                         <div>
-                          <span className="font-medium">{entry.fromChord} → {entry.toChord}</span>
+                          <span className="font-medium">
+                            {entry.fromChord} → {entry.toChord}
+                          </span>
                           <span className="text-sm text-gray-300 ml-2">
                             {new Date(entry.date).toLocaleDateString()}
                           </span>
@@ -277,16 +314,14 @@ function App() {
             )}
           </div>
         )}
-        
-        {activeView === 'history' && (
+
+        {activeView === "history" && (
           <ChordChangeHistory history={history} setHistory={setHistory} />
         )}
-        
-        {activeView === 'stats' && (
-          <ProgressChart history={history} />
-        )}
+
+        {activeView === "stats" && <ProgressChart history={history} />}
       </main>
-      
+
       <footer className="text-center p-4 text-sm text-indigo-300">
         <p>Keep practicing! Consistency is key to mastering chord changes.</p>
       </footer>
